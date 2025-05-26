@@ -4,7 +4,7 @@ import "./App.css";
 function App() {
   const [user, setUser] = useState(null);
   const [registeredUsers, setRegisteredUsers] = useState([]);
-  const [view, setView] = useState("login");
+  const [registerView, setRegisterView] = useState("login");
 
   useEffect(() => {
     const users = JSON.parse(localStorage.getItem("users")) || [];
@@ -15,7 +15,7 @@ function App() {
     const users = [...registeredUsers, newUser];
     setRegisteredUsers(users);
     localStorage.setItem("users", JSON.stringify(users));
-    setView("login");
+    setRegisterView("login");
   };
 
   const handleLogin = (credentials) => {
@@ -28,16 +28,24 @@ function App() {
     else alert("Invalid credentials");
   };
 
+  const handleLogout = () => {
+    setUser(null);
+    setRegisterView("login");
+  };
+
   return (
     <div className="app">
       {!user ? (
-        view === "login" ? (
-          <Login onLogin={handleLogin} switchToRegister={() => setView("register")} />
+        registerView === "login" ? (
+          <Login onLogin={handleLogin} switchToRegister={() => setRegisterView("register")} />
         ) : (
-          <Register onRegister={handleRegister} switchToLogin={() => setView("login")} />
+          <Register onRegister={handleRegister} switchToLogin={() => setRegisterView("login")} />
         )
       ) : (
-        <TodoList user={user} />
+        <>
+          <Profile user={user} onLogout={handleLogout} />
+          <TodoList user={user} />
+        </>
       )}
     </div>
   );
@@ -67,7 +75,7 @@ function Register({ onRegister, switchToLogin }) {
         <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required />
         <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         <button type="submit">Register</button>
-        <p onClick={switchToLogin}>Already have an account? Login</p>
+        <p>Already have an account? <span className="auth-link" onClick={switchToLogin}>Login</span></p>
       </form>
     </div>
   );
@@ -89,8 +97,18 @@ function Login({ onLogin, switchToRegister }) {
         <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required />
         <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         <button type="submit">Login</button>
-        <p onClick={switchToRegister}>Don't have an account? Register</p>
+        <p>Don't have an account? <span className="auth-link" onClick={switchToRegister}>Register</span></p>
       </form>
+    </div>
+  );
+}
+
+function Profile({ user, onLogout }) {
+  return (
+    <div className="profile">
+      <h3>User Profile</h3>
+      <p><strong>Username:</strong> {user.username}</p>
+      <button onClick={onLogout}>Logout</button>
     </div>
   );
 }
@@ -98,6 +116,7 @@ function Login({ onLogin, switchToRegister }) {
 function TodoList({ user }) {
   const [tasks, setTasks] = useState([]);
   const [taskTitle, setTaskTitle] = useState("");
+  const [editingTask, setEditingTask] = useState(null);
 
   const addTask = () => {
     if (taskTitle.trim()) {
@@ -108,35 +127,42 @@ function TodoList({ user }) {
 
   const toggleTask = (index) => {
     const newTasks = [...tasks];
-    newTasks[index] = { ...newTasks[index], done: !newTasks[index].done };
+    newTasks[index].done = !newTasks[index].done;
     setTasks(newTasks);
   };
 
   const deleteTask = (index) => {
-    const newTasks = tasks.filter((_, i) => i !== index);
+    setTasks(tasks.filter((_, i) => i !== index));
+    if (editingTask === index) setEditingTask(null);
+  };
+
+  const editTaskTitle = (index, newTitle) => {
+    const newTasks = [...tasks];
+    newTasks[index].title = newTitle;
     setTasks(newTasks);
   };
 
   const addSubtask = (index, title) => {
     const newTasks = [...tasks];
-    const updatedSubtasks = [...newTasks[index].subtasks, { title, done: false }];
-    newTasks[index] = { ...newTasks[index], subtasks: updatedSubtasks };
+    newTasks[index].subtasks.push({ title, done: false });
     setTasks(newTasks);
   };
 
   const toggleSubtask = (taskIndex, subIndex) => {
     const newTasks = [...tasks];
-    const updatedSubtasks = newTasks[taskIndex].subtasks.map((subtask, i) =>
-      i === subIndex ? { ...subtask, done: !subtask.done } : subtask
-    );
-    newTasks[taskIndex] = { ...newTasks[taskIndex], subtasks: updatedSubtasks };
+    newTasks[taskIndex].subtasks[subIndex].done = !newTasks[taskIndex].subtasks[subIndex].done;
     setTasks(newTasks);
   };
 
   const deleteSubtask = (taskIndex, subIndex) => {
     const newTasks = [...tasks];
-    const updatedSubtasks = newTasks[taskIndex].subtasks.filter((_, i) => i !== subIndex);
-    newTasks[taskIndex] = { ...newTasks[taskIndex], subtasks: updatedSubtasks };
+    newTasks[taskIndex].subtasks = newTasks[taskIndex].subtasks.filter((_, i) => i !== subIndex);
+    setTasks(newTasks);
+  };
+
+  const editSubtaskTitle = (taskIndex, subIndex, newTitle) => {
+    const newTasks = [...tasks];
+    newTasks[taskIndex].subtasks[subIndex].title = newTitle;
     setTasks(newTasks);
   };
 
@@ -156,18 +182,41 @@ function TodoList({ user }) {
         <div className="task" key={index}>
           <div className="task-header">
             <input type="checkbox" checked={task.done} onChange={() => toggleTask(index)} />
-            <span className={task.done ? "done" : ""}>{task.title}</span>
+            {editingTask === index ? (
+              <input
+                key={`task-${index}`}
+                type="text"
+                value={task.title}
+                onChange={(e) => editTaskTitle(index, e.target.value)}
+                onBlur={() => setEditingTask(null)}
+                autoFocus
+                className="task-input"
+              />
+            ) : (
+              <span className={`task-title ${task.done ? "done" : ""}`} onClick={() => setEditingTask(index)}>
+                {task.title}
+              </span>
+            )}
+            <button onClick={() => setEditingTask(index)}>Edit</button>
             <button onClick={() => deleteTask(index)}>Delete</button>
           </div>
-          <SubtaskList task={task} taskIndex={index} onAdd={addSubtask} onToggle={toggleSubtask} onDelete={deleteSubtask} />
+          <SubtaskList
+            task={task}
+            taskIndex={index}
+            onAdd={addSubtask}
+            onToggle={toggleSubtask}
+            onDelete={deleteSubtask}
+            onEdit={editSubtaskTitle}
+          />
         </div>
       ))}
     </div>
   );
 }
 
-function SubtaskList({ task, taskIndex, onAdd, onToggle, onDelete }) {
+function SubtaskList({ task, taskIndex, onAdd, onToggle, onDelete, onEdit }) {
   const [subtaskTitle, setSubtaskTitle] = useState("");
+  const [editingSubtask, setEditingSubtask] = useState(null);
 
   const handleAdd = () => {
     if (subtaskTitle.trim()) {
@@ -188,7 +237,22 @@ function SubtaskList({ task, taskIndex, onAdd, onToggle, onDelete }) {
       {task.subtasks.map((sub, i) => (
         <div className="subtask" key={i}>
           <input type="checkbox" checked={sub.done} onChange={() => onToggle(taskIndex, i)} />
-          <span className={sub.done ? "done" : ""}>{sub.title}</span>
+          {editingSubtask === i ? (
+            <input
+              key={`subtask-${taskIndex}-${i}`}
+              type="text"
+              value={sub.title}
+              onChange={(e) => onEdit(taskIndex, i, e.target.value)}
+              onBlur={() => setEditingSubtask(null)}
+              autoFocus
+              className="subtask-input"
+            />
+          ) : (
+            <span className={`subtask-title ${sub.done ? "done" : ""}`} onClick={() => setEditingSubtask(i)}>
+              {sub.title}
+            </span>
+          )}
+          <button onClick={() => setEditingSubtask(i)}>Edit</button>
           <button onClick={() => onDelete(taskIndex, i)}>Delete</button>
         </div>
       ))}
