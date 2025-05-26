@@ -19,6 +19,12 @@ input {
   margin: 10px 0;
   width: 100%;
   box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #fff;
+  color: #333;
+  font-family: Arial, sans-serif;
+  font-size: 16px;
 }
 
 button {
@@ -34,6 +40,18 @@ button:hover {
   background-color: #0056b3;
 }
 
+.auth-link {
+  color: #007bff;
+  font-weight: bold;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+  color: #0056b3;
+}
+
 .todo-container {
   background: #fff;
   padding: 20px;
@@ -47,14 +65,60 @@ button:hover {
   gap: 10px;
 }
 
-.task-header, .subtask {
+.task-header,
+.subtask {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-top: 10px;
 }
 
+.task-title,
+.subtask-title {
+  flex: 1;
+  padding: 8px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.task-header input.task-input,
+.subtask input.subtask-input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #007bff;
+  border-radius: 5px;
+  font-size: 16px;
+  background-color: #ffffff;
+  color: #000000;
+  opacity: 1;
+  visibility: visible;
+  outline: none;
+  font-family: Arial, sans-serif;
+  line-height: normal;
+  z-index: 1; /* Ensure input is not obscured */
+}
+
+.task-header input.task-input:focus,
+.subtask input.subtask-input:focus {
+  border-color: #0056b3;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+}
+
+.task-header input.task-input.done,
+.subtask input.subtask-input.done {
+  text-decoration: none;
+  color: #000000;
+}
+
 .done {
   text-decoration: line-through;
-  color: gray;
+  color: #666;
+}
+
+.profile {
+  background-color: #f0f8ff;
+  padding: 15px;
+  margin-top: 20px;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
 }
